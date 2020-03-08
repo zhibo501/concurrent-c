@@ -1,0 +1,47 @@
+cmake_minimum_required(VERSION 2.8.2)
+
+project(test-download NONE)
+
+include(ExternalProject)
+
+ExternalProject_Add(googletest
+  #--Download step--------------
+  GIT_REPOSITORY    https://github.com/google/googletest.git
+  GIT_TAG           release-1.8.1
+  #--Update/Patch step----------
+  UPDATE_COMMAND    ""
+  #--Configure step-------------
+  SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/googletest-src"
+  CONFIGURE_COMMAND ""
+  #--Build step-----------------
+  BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/googletest-build"
+  BUILD_COMMAND     ""
+  #--Install step---------------
+  INSTALL_COMMAND   ""
+  #--Test step------------------
+  TEST_COMMAND      ""
+)
+
+#ExternalProject_Add(mockcpp
+#  #--Basic step-----------------
+#  DEPENDS           googletest
+#  #--Download step--------------
+#  #GIT_REPOSITORY    git@github.com:zhibo501/mockcpp.git
+#  GIT_REPOSITORY    https://github.com/zhibo501/mockcpp.git
+#  GIT_TAG           master
+#  #--Update/Patch step----------
+#  UPDATE_COMMAND    ""
+#  #--Configure step-------------
+#  SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/mockcpp-src"
+#  CMAKE_ARGS
+#      -DMOCKCPP_XUNIT=gtest
+#      -DMOCKCPP_XUNIT_HOME=${CMAKE_CURRENT_BINARY_DIR}/googletest-src/googletest
+#  #--Build step-----------------
+#  BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/mockcpp-build"
+#  BUILD_COMMAND     "make"
+#  #--Install step---------------
+#  INSTALL_COMMAND   ""
+#  #--Test step------------------
+#  TEST_COMMAND      ""
+#)
+

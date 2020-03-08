@@ -1,0 +1,5 @@
+// the configured options and settings for concurrent-c
+#define Concurrent_VERSION_MAJOR @Concurrent_VERSION_MAJOR@
+#define Concurrent_VERSION_MINOR @Concurrent_VERSION_MINOR@
+#define Concurrent_VERSION_PATCH @Concurrent_VERSION_PATCH@
+
