@@ -6,7 +6,10 @@
 #include <unistd.h>
 #include <pthread.h>
 
+// include config.h for version settings
+#include "config.h"
 #include "rcu.h"
+
 
 #define SHARE_DATA_MAGIC_NUM     (0x20200308)
 
@@ -20,6 +23,7 @@
 ///     n + 1 : n attached
 typedef struct {
 	int32_t  ref;
+	int32_t  resv;
 	void    *data;
 } ref_data;
 
@@ -47,6 +51,7 @@ int __ref_data_try_attach(ref_data* this) {
 	assert(this != NULL);
 	int32_t ref = __sync_or_and_fetch(&(this->ref), 0);
 	if (0 == ref) {
+		// printf("====== __ref_data_try_attach fail. ref==0. ref_data:(%d, %p)\n", this->ref, this->data);
 		return -1;
 	}
 
@@ -54,7 +59,8 @@ int __ref_data_try_attach(ref_data* this) {
 	if (__sync_bool_compare_and_swap(&(this->ref), ref, ref + 1)) {
 		return 0;
 	} else {
-		return -1;
+		// printf("====== __ref_data_try_attach fail. ref[%d] change. ref_data:(%d, %p)\n", ref, this->ref, this->data);
+		return -2;
 	}
 }
 
@@ -103,6 +109,34 @@ typedef struct {
 	ref_data         rdata[0];
 } share_data;
 
+_PUB_ void share_debug_show(void* this)
+{
+	if (NULL == this) {
+		return;
+	}
+
+	int32_t max = ((share_data*)this)->max;
+	if (max <= 0 || max > SHARE_DATA_MAX_SHADOW) {
+		max = 0;
+	}
+	int size = sizeof(share_data) + (max * sizeof(ref_data));
+	share_data* p = (share_data*)malloc(size);
+	if (NULL == p) {
+		printf("share_debug_show malloc fail\n");
+		return;
+	}
+	memcpy(p, this, size);
+
+	printf("====== share_data : magic = 0x%x | max = %d | cur = %d | clone = %p | free = %p\n",
+		p->magic, p->max, p->cur, p->clone, p->free);
+	for (int32_t i = 0; i < max; i++) {
+		printf("====== share_data : rdata[%d] = (%d , %p)\n",
+			i, p->rdata[i].ref, p->rdata[i].data);
+	}
+
+	free(p);
+}
+
 void* new_share_data(int shadow_max, usr_clone clone, usr_free free, void* usr_data)
 {
 	if ((NULL == usr_data) || (NULL == clone) || (NULL == free)) {
@@ -134,22 +168,11 @@ void* new_share_data(int shadow_max, usr_clone clone, usr_free free, void* usr_d
 	}
 	p->cur = 0;
 	__ref_data_init(&(p->rdata[0]), usr_data);
+	// default attach to next rdata
+	__ref_data_attach(&(p->rdata[0]));
+
+	share_debug_show(p);
 	return p;
-}
-
-void share_debug_show(void* this)
-{
-	if (NULL == this) {
-		return;
-	}
-
-	share_data* p = (share_data*)this;
-	printf("====== share_data : magic = 0x%x | max = %d | cur = %d | clone = %p | free = %p\n",
-		p->magic, p->max, p->cur, p->clone, p->free);
-	for (int32_t i = 0; i < p->max && i < SHARE_DATA_MAX_SHADOW; i++) {
-		printf("====== share_data : rdata[%d] = (%d , %p)\n",
-			i, p->rdata[i].ref, p->rdata[i].data);
-	}
 }
 
 static inline
@@ -170,6 +193,7 @@ int32_t __share_data_find_next(share_data* this, int32_t exclude) {
 		usleep(10);
 	}
 
+	printf("__share_data_find_next fail. no empty rdata. exclude: %d\n", exclude);
 	share_debug_show(this);
 	return -1;
 }
@@ -186,8 +210,10 @@ int __share_read(share_data* this, share_read_hook read_hook, void* option)
 		if (0 == __ref_data_try_attach(rd)) {
 			break;
 		}
+		// share_debug_show(this);
 	}
 	if (i >= SHARE_DATA_MAX_TRY) {
+		printf("__share_read fail. try too many times. read_hook: %p option: %p\n", read_hook, option);
 		share_debug_show(this);
 		return -1;
 	}
@@ -263,4 +289,9 @@ int share_write(void* this, share_write_hook write_hook, void* option)
 		__share_unlock((share_data*)this);
 	}
 	return ret;
+}
+
+const char* share_get_ver()
+{
+	return CONS_VERSION;
 }

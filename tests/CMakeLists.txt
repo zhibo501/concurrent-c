@@ -33,8 +33,15 @@ if (CMAKE_VERSION VERSION_LESS 2.8.11)
   include_directories("${gtest_SOURCE_DIR}/include")
 endif()
 
+# Add mockcpp directly to our build.
+# add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/mockcpp-src)
+#					${CMAKE_CURRENT_BINARY_DIR}/mockcpp-build)
+#					EXCLUDE_FROM_ALL)
+# include_directories("${CMAKE_CURRENT_BINARY_DIR}/mockcpp-src/include")
+
 # Now simply link against gtest or gtest_main as needed. Eg
 add_executable(rcu_test_bin rcu_testcase.cpp)
+# target_link_libraries(rcu_test_bin rcu ${CMAKE_CURRENT_BINARY_DIR}/mockcpp-build/src/libmockcpp.a gtest_main gmock_main)
 target_link_libraries(rcu_test_bin rcu gtest_main gmock_main)
 
 if (CMAKE_VERSION VERSION_LESS 3.9.0)
@@ -43,4 +50,3 @@ else()
 include(GoogleTest)
 gtest_add_tests(rcu_test_bin "" AUTO)
 endif()
-

@@ -44,4 +44,3 @@ ExternalProject_Add(googletest
 #  #--Test step------------------
 #  TEST_COMMAND      ""
 #)
-
